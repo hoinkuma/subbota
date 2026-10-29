@@ -14,6 +14,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject exitPanel;
     private float exitCooldownUntil = 0f;
 
+    [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private int slowThreshold = 5;
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip pickupSound;
+    [SerializeField] private AudioClip loseSound;
 
     private int lootCollected = 0;
     private bool isGameOver = false;
@@ -41,10 +48,16 @@ public class GameManager : MonoBehaviour
 
     public void AddLoot()
     {
+        if (isGameOver) return;
         lootCollected++;
-        UpdateLootText();
-    }
 
+        PlaySound(pickupSound);
+        
+        UpdateLootText();
+
+        if (playerMovement != null && lootCollected >= slowThreshold)
+            playerMovement.SetSlowed(true);
+    }
     void UpdateLootText()
     {
         lootText.text = $"Collected: {lootCollected}";
@@ -70,6 +83,10 @@ public class GameManager : MonoBehaviour
         bankedLoot += lootCollected;
         lootCollected = 0;
         UpdateLootText();
+
+        if (playerMovement != null)
+            playerMovement.SetSlowed(false);
+
         CloseExitMenu();
     }
     public void FinishGame()
@@ -80,6 +97,7 @@ public class GameManager : MonoBehaviour
     void EndGame()
     {
         isGameOver = true;
+        PlaySound(loseSound);
 
         int total = bankedLoot + lootCollected;
         if (gameOverScore != null)
@@ -93,6 +111,7 @@ public class GameManager : MonoBehaviour
     public void OnPlayerCaught()
     {
         if (isGameOver) return;
+        PlaySound(loseSound);
 
         int total = bankedLoot + lootCollected;
         if (gameOverScore != null)
@@ -103,5 +122,10 @@ public class GameManager : MonoBehaviour
 
         isGameOver = true;
         Time.timeScale = 0f;
+    }
+    void PlaySound(AudioClip clip)
+    {
+        if (audioSource != null && clip != null)
+            audioSource.PlayOneShot(clip);
     }
 }
